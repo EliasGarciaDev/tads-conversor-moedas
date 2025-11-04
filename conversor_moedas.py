@@ -2,49 +2,53 @@ import requests
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
 
-# --- Princípio 1: Inversão de Dependência (Abstração) ---
+# --- Princípio DIP: Abstração do Provedor ---
 class ProvedorTaxasCambio(ABC):
     """
-    Interface abstrata (Classe Base Abstrata) para um provedor de taxas de câmbio.
-    Isso permite "inverter" a dependência: a lógica da aplicação
-    dependerá desta abstração, e não de uma API concreta.
+    Classe base abstrata (Interface) para os provedores de taxa.
+    Define o "contrato" que a GUI (app_gui) espera receber.
+    Isso permite que a GUI dependa desta abstração, e não de uma API concreta.
     """
     @abstractmethod
     def obter_taxas(self, moeda_base: str) -> Optional[Dict[str, float]]:
-        """Busca as taxas de câmbio para uma moeda base."""
+        """Método obrigatório que toda classe filha deve implementar."""
         pass
 
-# --- Princípio 2: Responsabilidade Única (Lógica de API) ---
+# --- Princípio SRP: Classe focada em API ---
 class ProvedorTaxasApi(ProvedorTaxasCambio):
     """
-    Implementação concreta do provedor de taxas que busca dados
-    de uma API pública. Sua única responsabilidade é lidar
-    com a comunicação de rede e o parsing da resposta.
+    Implementação concreta do Provedor, focada em buscar dados de uma API externa.
+    
+    A única responsabilidade desta classe (SRP) é lidar com a 
+    comunicação web (requests), fazer o parse do JSON e tratar erros de rede.
     """
     def __init__(self, url_api: str):
         self.url_api = url_api
 
     def obter_taxas(self, moeda_base: str) -> Optional[Dict[str, float]]:
-        """Busca as taxas da API."""
+        """Implementa o método da interface para buscar dados da API."""
         try:
-            # Constrói a URL completa (ex: https://api.exchangerate-api.com/v4/latest/BRL)
             url = f"{self.url_api}{moeda_base}"
             resposta = requests.get(url, timeout=5)
             resposta.raise_for_status()  # Lança erro para status HTTP 4xx/5xx
             dados = resposta.json()
             return dados.get('rates')
         except requests.exceptions.RequestException as e:
-            print(f"Erro ao buscar dados da API: {e}")
-            return None
+            # Log do erro no console para depuração (útil para o dev)
+            print(f"Erro de rede ao buscar dados da API: {e}")
+            return None # Retorna None para a GUI saber que falhou
 
-# --- Princípio 2: Responsabilidade Única (Lógica de Negócio) ---
+# --- Princípio SRP: Classe focada em Cálculo ---
 class LogicaConversao:
     """
-    Esta classe tem a única responsabilidade de calcular a conversão.
-    Ela não sabe de onde vêm as taxas (API, cache, mock), apenas como usá-las.
+    Classe com a única responsabilidade (SRP) de realizar a lógica de negócio
+    (o cálculo matemático da conversão).
+    
+    Não sabe de onde vêm os dados (API, banco, etc), apenas como calcular.
     """
     def converter(self, valor: float, taxa: float) -> float:
-        """Realiza o cálculo de conversão."""
+        """Realiza o cálculo matemático da conversão."""
         if valor < 0:
+            # Regra de negócio simples: não permitir conversão de valores negativos.
             raise ValueError("O valor não pode ser negativo.")
         return valor * taxa
