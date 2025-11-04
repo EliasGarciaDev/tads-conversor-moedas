@@ -1,5 +1,4 @@
-import tkinter as tk
-# Importa as classes traduzidas
+import ttkbootstrap as ttk
 from conversor_moedas import ProvedorTaxasApi, LogicaConversao
 from app_gui import AppConversorMoedas
 
@@ -17,8 +16,8 @@ def main():
     provedor_taxas = ProvedorTaxasApi(url_api=URL_API)
     logica_conversao = LogicaConversao()
 
-    # 2. Configura a raiz do Tkinter
-    root = tk.Tk()
+    # 2. Configura a raiz, agora usando ttk.Window com um tema
+    root = ttk.Window(themename="solar")
 
     # 3. Injeta as dependências na classe da GUI
     app = AppConversorMoedas(
